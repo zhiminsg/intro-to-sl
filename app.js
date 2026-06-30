@@ -6,9 +6,10 @@
 (function () {
   'use strict';
 
-  const SECTION_ORDER = ['frame', '1', '2', '3', '4', '5', '6', 'close', 'task'];
+  const SECTION_ORDER = ['frame', 'intro', '1', '2', '3', '4', '5', '6', 'close', 'task'];
   const SECTION_LABELS = {
     frame: 'Frame',
+    intro: 'Why',
     '1': 'Levels',
     '2': 'Tension',
     '3': 'Success',
@@ -214,37 +215,120 @@
   }
   function hasAny(d) { return [d.r7, d.r6, d.r5, d.r4, d.r3, d.r2, d.r1].some(v => v.length > 0); }
 
-  // ========== Export: PDF ==========
-  function buildPrintableHTML(d) {
-    const name = d.name || 'My ladder';
-    const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-    const row = (n, h, v) => `
-      <tr>
-        <td style="vertical-align:top;padding:14px 10px 14px 0;width:36px;font-weight:700;color:#0e5a55;font-size:16px;">${n}</td>
-        <td style="vertical-align:top;padding:14px 0;border-bottom:1px solid #e2dccf;">
-          <div style="font-family:Georgia,serif;font-size:17px;color:#1a1a1c;margin-bottom:6px;">${h}</div>
-          <div style="white-space:pre-wrap;font-size:14.5px;color:#1a1a1c;line-height:1.5;min-height:1.5em;">${v ? escapeHtml(v) : '<span style="color:#aaa;">(left blank)</span>'}</div>
-        </td>
-      </tr>`;
-    return `
-<div style="font-family:'Helvetica Neue',Arial,sans-serif;padding:36px;max-width:680px;color:#1a1a1c;background:#fbf7ef;">
-  <div style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#0e5a55;font-weight:700;">Before the day · Systems thinking</div>
-  <h1 style="font-family:Georgia,serif;font-size:28px;margin:6px 0 4px;letter-spacing:-0.01em;">Walking one real work moment down the ladder.</h1>
-  <div style="font-size:13px;color:#7a7268;margin-bottom:20px;">${escapeHtml(name)} · ${today}</div>
-  <table style="width:100%;border-collapse:collapse;">
-    ${row(7, 'Actions.', d.r7)}
-    ${row(6, 'Beliefs.', d.r6)}
-    ${row(5, 'Conclusions.', d.r5)}
-    ${row(4, 'Assumptions.', d.r4)}
-    ${row(3, 'Assigned meaning.', d.r3)}
-    ${row(2, 'Filtered information.', d.r2)}
-    ${row(1, 'Raw data and observations.', d.r1)}
-  </table>
-  <p style="margin-top:24px;padding:14px 16px;background:rgba(14,90,85,0.10);border-left:3px solid #0e5a55;border-radius:6px;font-size:13.5px;line-height:1.55;">At rung 1, there is only <em>raw data and observations</em>. The other rungs are the thinking to test before acting.</p>
-</div>`;
+  // ========== Poster prompt ==========
+  const POSTER_STYLES = {
+    modern: {
+      title: 'Modern clean',
+      description: 'minimal, polished, easy to read, with a clear ladder structure and generous white space'
+    },
+    cartoon: {
+      title: 'Friendly cartoon',
+      description: 'playful and light-hearted, with simple original characters, rounded shapes, and a warm learning feel'
+    },
+    anime: {
+      title: 'Anime-inspired',
+      description: 'expressive, colourful, and energetic, with original characters only and no reference to copyrighted shows or characters'
+    },
+    storybook: {
+      title: 'Storybook sketch',
+      description: 'warm, hand-drawn, reflective, with soft illustration details and a personal journal feel'
+    },
+    pop: {
+      title: 'Bold pop',
+      description: 'bright, energetic, attention-grabbing, with strong shapes and a poster-like sense of movement'
+    }
+  };
+
+  const POSTER_PALETTES = {
+    'teal-coral': 'teal, coral, warm cream, and charcoal text',
+    'sky-lemon': 'sky blue, lemon yellow, white, and dark navy text',
+    sunset: 'sunset orange, purple, blush pink, and warm off-white',
+    'sage-gold': 'sage green, charcoal, soft gold, and warm cream',
+    'mono-red': 'white background, black typography, one precise red accent for the raw-data rung',
+  };
+
+  function getPosterChoices() {
+    const styleKey = document.querySelector('input[name="poster_style"]:checked')?.value || 'modern';
+    const paletteKey = document.getElementById('poster_palette')?.value || 'teal-coral';
+    return {
+      style: POSTER_STYLES[styleKey] || POSTER_STYLES.modern,
+      palette: POSTER_PALETTES[paletteKey] || POSTER_PALETTES['teal-coral'],
+      custom: (document.getElementById('poster_custom')?.value || '').trim()
+    };
   }
-  function escapeHtml(s) {
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  function buildPosterPrompt(d, service = 'gemini') {
+    const choices = getPosterChoices();
+    const serviceLead = service === 'chatgpt'
+      ? 'Create a polished poster image from the content below.'
+      : 'Generate a polished poster image from the content below.';
+    const customLine = choices.custom
+      ? `\nAdditional look and feel from me: ${choices.custom}\n`
+      : '';
+
+    return `${serviceLead}
+
+Format: portrait A4 poster, suitable for an upcoming class pre-work activity.
+
+Main header: "Ladder of Inference"
+Title: "Walking one real work moment down the ladder"
+Subtitle: "${d.name || 'My ladder'}"
+
+Design direction: ${choices.style.title} — ${choices.style.description}.
+Colour direction: ${choices.palette}.${customLine}
+Show seven rungs, top to bottom, using these exact labels and learner notes:
+
+7 · Actions: ${d.r7 || '(left blank)'}
+6 · Beliefs: ${d.r6 || '(left blank)'}
+5 · Conclusions: ${d.r5 || '(left blank)'}
+4 · Assumptions: ${d.r4 || '(left blank)'}
+3 · Assigned meaning: ${d.r3 || '(left blank)'}
+2 · Filtered information: ${d.r2 || '(left blank)'}
+1 · Raw data and observations: ${d.r1 || '(left blank)'}
+
+Make it visually clear that the ladder is usually climbed from rung 1 upward, but this reflection is walking it back down to test the thinking.
+
+Highlight rung 1 as the only raw data and observations. Keep the other rungs visually connected, but do not make them look wrong or shameful. Use neutral, reflective language.
+
+Bottom caption: "At rung 1, there is only raw data and observations. The other rungs are the thinking to test before acting."
+
+Keep all text legible. Do not invent extra content. Do not rewrite the rung labels. Avoid clutter, dark backgrounds, and tiny text.`;
+  }
+
+  function buildPromptBundle(d) {
+    return [
+      'Poster prompt for Gemini',
+      '========================',
+      buildPosterPrompt(d, 'gemini'),
+      '',
+      'Poster prompt for ChatGPT',
+      '=========================',
+      buildPosterPrompt(d, 'chatgpt')
+    ].join('\n');
+  }
+
+  function refreshPosterPrompt(service = 'gemini') {
+    const output = document.getElementById('poster_prompt');
+    if (!output) return;
+    output.value = buildPosterPrompt(getFormData(), service);
+  }
+
+  async function copyPosterPrompt(service) {
+    const prompt = buildPosterPrompt(getFormData(), service);
+    const output = document.getElementById('poster_prompt');
+    if (output) output.value = prompt;
+    try {
+      await navigator.clipboard.writeText(prompt);
+      showToast(service === 'chatgpt' ? 'ChatGPT prompt copied.' : 'Gemini prompt copied.');
+      return true;
+    } catch {
+      if (output) {
+        output.focus();
+        output.select();
+      }
+      showToast('Prompt ready. Copy it from the box.');
+      return false;
+    }
   }
 
   // ========== Export buttons ==========
@@ -257,31 +341,11 @@
         return;
       }
 
-      if (type === 'pdf') {
-        const el = document.createElement('div');
-        el.innerHTML = buildPrintableHTML(d);
-        document.body.appendChild(el);
-        try {
-          await window.html2pdf().set({
-            margin: 0,
-            filename: `ladder-${(d.name || 'my').toLowerCase().replace(/\s+/g, '-')}.pdf`,
-            image: { type: 'jpeg', quality: 0.95 },
-            html2canvas: { scale: 2, useCORS: true, backgroundColor: '#fbf7ef' },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-          }).from(el).save();
-          showToast('PDF saved.');
-        } catch (err) {
-          showToast('PDF save failed. Try email instead.');
-          console.error(err);
-        } finally {
-          el.remove();
-        }
-      }
-
-      else if (type === 'docx') {
+      if (type === 'docx') {
         try {
           const { Document, Packer, Paragraph, HeadingLevel, TextRun, AlignmentType } = window.docx;
           const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+          const promptBundle = buildPromptBundle(d);
           const rung = (n, h, v) => [
             new Paragraph({
               spacing: { before: 200, after: 80 },
@@ -295,6 +359,10 @@
               children: [new TextRun({ text: v || '(left blank)', size: 24, color: v ? '1A1A1C' : 'AAAAAA' })],
             }),
           ];
+          const promptParagraphs = (prompt) => prompt.split('\n').map(line => new Paragraph({
+            spacing: { after: 60 },
+            children: [new TextRun({ text: line || ' ', size: 18, font: 'Courier New', color: '333333' })]
+          }));
           const doc = new Document({
             sections: [{
               properties: {},
@@ -320,6 +388,19 @@
                     italics: true, size: 22, color: '4A4641'
                   })]
                 }),
+                new Paragraph({
+                  heading: HeadingLevel.HEADING_2,
+                  spacing: { before: 360, after: 120 },
+                  children: [new TextRun({ text: 'Poster prompts', size: 30 })]
+                }),
+                new Paragraph({
+                  spacing: { after: 160 },
+                  children: [new TextRun({
+                    text: 'Use one of the prompts below in Gemini or ChatGPT to generate a poster from your ladder. You can edit the prompt before using it.',
+                    size: 22, color: '4A4641'
+                  })]
+                }),
+                ...promptParagraphs(promptBundle),
               ]
             }]
           });
@@ -327,7 +408,7 @@
           window.saveAs(blob, `ladder-${(d.name || 'my').toLowerCase().replace(/\s+/g,'-')}.docx`);
           showToast('Word file saved.');
         } catch (err) {
-          showToast('Word save failed. Try PDF instead.');
+          showToast('Word save failed. Try email instead.');
           console.error(err);
         }
       }
@@ -357,50 +438,57 @@
           `1 · Raw data and observations:`,
           `   ${d.r1 || '(left blank)'}`,
           '',
-          '— At rung 1, there is only raw data and observations. The other rungs are the thinking to test before acting.'
+          '— At rung 1, there is only raw data and observations. The other rungs are the thinking to test before acting.',
+          '',
+          '',
+          buildPromptBundle(d)
         ].join('\n');
         const subject = `My ladder — ${d.name || 'before the day'}`;
         const href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines)}`;
         window.location.href = href;
         showToast('Opening your email app…');
       }
-
-      else if (type === 'poster') {
-        const prompt = `Make a clean, classy poster (portrait, A4) showing my ladder walk.
-
-Title at the top: "Walking one real work moment down the ladder."
-Subtitle: "${d.name || 'My ladder'}".
-
-Then seven rungs, top to bottom (read from the bottom up):
-
-7 · Actions: ${d.r7 || '(left blank)'}
-6 · Beliefs: ${d.r6 || '(left blank)'}
-5 · Conclusions: ${d.r5 || '(left blank)'}
-4 · Assumptions: ${d.r4 || '(left blank)'}
-3 · Assigned meaning: ${d.r3 || '(left blank)'}
-2 · Filtered information: ${d.r2 || '(left blank)'}
-1 · Raw data and observations: ${d.r1 || '(left blank)'}
-
-Highlight rung 1 in a deep teal colour (#0E5A55) — that is the only thing that actually happened.
-
-At the bottom, add this caption: "At rung 1, there is only raw data and observations. The other rungs are the thinking to test before acting."
-
-Use a calm warm cream background (#FBF7EF), a serif headline font, and a clean modern sans-serif body. Premium magazine aesthetic.`;
-        try {
-          await navigator.clipboard.writeText(prompt);
-          showToast('Prompt copied. Pick Gemini or ChatGPT…', 2200);
-        } catch {
-          showToast('Could not copy. Pick a service to open.');
-        }
-        setTimeout(() => {
-          if (confirm('Open Gemini (OK) or ChatGPT (Cancel)?\n\nPaste the prompt I just copied to your clipboard.')) {
-            window.open('https://gemini.google.com/app', '_blank', 'noopener');
-          } else {
-            window.open('https://chat.openai.com/', '_blank', 'noopener');
-          }
-        }, 600);
-      }
     });
   });
+
+  // ========== Poster builder ==========
+  const posterBuilder = document.querySelector('[data-poster-builder]');
+
+  posterBuilder?.querySelectorAll('input[name="poster_style"], #poster_palette, #poster_custom').forEach(control => {
+    const eventName = control.tagName === 'TEXTAREA' ? 'input' : 'change';
+    control.addEventListener(eventName, () => refreshPosterPrompt('gemini'));
+  });
+
+  document.querySelector('[data-form]')?.addEventListener('input', (event) => {
+    if (!posterBuilder) return;
+    if (event.target?.id === 'poster_prompt') return;
+    refreshPosterPrompt('gemini');
+  });
+
+  document.querySelectorAll('[data-poster-copy]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const d = getFormData();
+      if (!hasAny(d)) {
+        showToast('Fill in at least one rung first.');
+        return;
+      }
+      await copyPosterPrompt(btn.getAttribute('data-poster-copy'));
+    });
+  });
+
+  document.querySelectorAll('[data-poster-copy-open]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const d = getFormData();
+      if (!hasAny(d)) {
+        showToast('Fill in at least one rung first.');
+        return;
+      }
+      const service = btn.getAttribute('data-poster-copy-open');
+      await copyPosterPrompt(service);
+      window.open(service === 'chatgpt' ? 'https://chatgpt.com/' : 'https://gemini.google.com/app', '_blank', 'noopener');
+    });
+  });
+
+  refreshPosterPrompt('gemini');
 
 })();
