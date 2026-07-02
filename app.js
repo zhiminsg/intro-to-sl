@@ -204,25 +204,18 @@
   function getFormData() {
     return {
       name: (document.getElementById('f_name')?.value || '').trim(),
-      r7: (document.getElementById('f_r7')?.value || '').trim(),
-      r6: (document.getElementById('f_r6')?.value || '').trim(),
-      r5: (document.getElementById('f_r5')?.value || '').trim(),
-      r4: (document.getElementById('f_r4')?.value || '').trim(),
-      r2: (document.getElementById('f_r2')?.value || '').trim(),
-      r1: (document.getElementById('f_r1')?.value || '').trim(),
-      expand: (document.getElementById('f_expand')?.value || '').trim(),
-      nextAction: (document.getElementById('f_next_action')?.value || '').trim(),
+      story: (document.getElementById('f_story')?.value || '').trim(),
     };
   }
   function hasAny(d) {
-    return [d.r7, d.r6, d.r5, d.r4, d.r2, d.r1, d.expand, d.nextAction].some(v => v.length > 0);
+    return d.story.length > 0;
   }
 
   // ========== Poster prompt ==========
   const POSTER_STYLES = {
     modern: {
       title: 'Modern clean',
-      description: 'minimal, polished, easy to read, with a clear ladder structure and generous white space'
+      description: 'minimal, polished, easy to read, with a clear scene composition and generous white space'
     },
     cartoon: {
       title: 'Friendly cartoon',
@@ -247,7 +240,7 @@
     'sky-lemon': 'sky blue, lemon yellow, white, and dark navy text',
     sunset: 'sunset orange, purple, blush pink, and warm off-white',
     'sage-gold': 'sage green, charcoal, soft gold, and warm cream',
-    'mono-red': 'white background, black typography, one precise red accent for the pool of available data',
+    'mono-red': 'white background, black typography, one precise red accent for the tension point',
   };
 
   function getPosterChoices() {
@@ -273,34 +266,32 @@
 
 Format: portrait A4 poster, suitable for an upcoming class pre-work activity.
 
-Main header: "Ladder of Inference"
-Title: "Walking one real work moment down the ladder"
-Subtitle: "${d.name || 'My ladder'}"
+Main header: "One Moment To Explore"
+Title: Create a short, neutral title from the story.
+Subtitle: "${d.name || 'My moment'}"
 
 Design direction: ${choices.style.title} — ${choices.style.description}.
 Colour direction: ${choices.palette}.${customLine}
-Show the class Ladder of Inference structure, top to bottom, using these exact labels and learner notes:
+Story from my perspective:
+${d.story || '(moment not written yet)'}
 
-6 · Actions: ${d.r7 || '(left blank)'}
-5 · Beliefs: ${d.r6 || '(left blank)'}
-4 · Conclusions: ${d.r5 || '(left blank)'}
-3 · Assumptions: ${d.r4 || '(left blank)'}
-2 · Select Data: ${d.r2 || '(left blank)'}
-1 · Pool of Available Data: ${d.r1 || '(left blank)'}
+Poster goal:
+Create a learner-facing poster that makes this one moment easy to revisit in class. It should feel curious, human, and slightly playful, not like a complaint, judgement, or performance review.
 
-After walking down:
-What else could be in the pool of available data? ${d.expand || '(left blank)'}
-What is one more grounded next action? ${d.nextAction || '(left blank)'}
+Visual treatment:
+- Show the moment as a scene, metaphor, split-screen, comic panel, or symbolic composition that fits the chosen style.
+- Use original characters only. If names, teams, or organisations appear in the story, anonymise them visually.
+- Make the tension visible without blaming anyone.
+- Leave space for interpretation. Do not diagnose the situation or complete the Ladder of Inference for me.
 
-Make it visually clear that the mind usually climbs from the pool of available data up to action, while this reflection walks down from action to data to test the thinking.
+Include these small caption areas with short, legible text:
+1. "What happened"
+2. "What I noticed or felt"
+3. "What I am still curious about"
 
-Include a small reflexive-loop note: "Our beliefs affect which data we select next time."
+Footer line: "A moment to explore, not a case to prove."
 
-Keep the upper rungs neutral. They are not bad; they are thinking to test before acting.
-
-Bottom caption: "Walk down to test your thinking. Widen the data pool before choosing the next action."
-
-Keep all text legible. Do not invent extra content. Do not rewrite the rung labels. Avoid clutter, dark backgrounds, and tiny text.`;
+Keep all text legible. Do not add extra facts that are not in the story. Avoid clutter, dark backgrounds, and tiny text.`;
   }
 
   function buildPromptBundle(d) {
@@ -345,28 +336,19 @@ Keep all text legible. Do not invent extra content. Do not rewrite the rung labe
       const type = btn.getAttribute('data-export');
       const d = getFormData();
       if (!hasAny(d)) {
-        showToast('Fill in at least one field first.');
+        showToast('Describe your moment first.');
         return;
       }
 
       if (type === 'docx') {
         try {
-          const { Document, Packer, Paragraph, HeadingLevel, TextRun, AlignmentType } = window.docx;
+          const { Document, Packer, Paragraph, HeadingLevel, TextRun } = window.docx;
           const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
           const promptBundle = buildPromptBundle(d);
-          const rung = (n, h, v) => [
-            new Paragraph({
-              spacing: { before: 200, after: 80 },
-              children: [
-                new TextRun({ text: `${n}  `, bold: true, color: '0E5A55', size: 28 }),
-                new TextRun({ text: h, italics: true, size: 26 }),
-              ]
-            }),
-            new Paragraph({
-              spacing: { after: 160 },
-              children: [new TextRun({ text: v || '(left blank)', size: 24, color: v ? '1A1A1C' : 'AAAAAA' })],
-            }),
-          ];
+          const storyParagraphs = (d.story || '(left blank)').split('\n').map(line => new Paragraph({
+            spacing: { after: 120 },
+            children: [new TextRun({ text: line || ' ', size: 24, color: d.story ? '1A1A1C' : 'AAAAAA' })]
+          }));
           const promptParagraphs = (prompt) => prompt.split('\n').map(line => new Paragraph({
             spacing: { after: 60 },
             children: [new TextRun({ text: line || ' ', size: 18, font: 'Courier New', color: '333333' })]
@@ -379,29 +361,22 @@ Keep all text legible. Do not invent extra content. Do not rewrite the rung labe
                 new Paragraph({
                   heading: HeadingLevel.HEADING_1,
                   spacing: { before: 100, after: 100 },
-                  children: [new TextRun({ text: 'Walking one real work moment down the ladder.', size: 40 })]
+                  children: [new TextRun({ text: 'One real moment for class.', size: 40 })]
                 }),
-                new Paragraph({ children: [new TextRun({ text: `${d.name || 'My ladder'}  ·  ${today}`, color: '7A7268', size: 22 })] }),
-                ...rung(6, 'Actions.', d.r7),
-                ...rung(5, 'Beliefs.', d.r6),
-                ...rung(4, 'Conclusions.', d.r5),
-                ...rung(3, 'Assumptions.', d.r4),
-                ...rung(2, 'Select Data.', d.r2),
-                ...rung(1, 'Pool of Available Data.', d.r1),
+                new Paragraph({ children: [new TextRun({ text: `${d.name || 'My moment'}  ·  ${today}`, color: '7A7268', size: 22 })] }),
                 new Paragraph({
-                  spacing: { before: 240 },
+                  heading: HeadingLevel.HEADING_2,
+                  spacing: { before: 320, after: 120 },
+                  children: [new TextRun({ text: 'My moment, from my perspective', size: 30 })]
+                }),
+                ...storyParagraphs,
+                new Paragraph({
+                  spacing: { before: 180, after: 80 },
                   children: [new TextRun({
-                    text: 'The upper rungs are not bad. They are normal thinking. The practice is to notice the climb, walk down carefully, widen the data pool, and then act with more choice.',
+                    text: 'This does not need to be a perfect analysis. It is a starting point for curiosity in class.',
                     italics: true, size: 22, color: '4A4641'
                   })]
                 }),
-                new Paragraph({
-                  heading: HeadingLevel.HEADING_2,
-                  spacing: { before: 360, after: 120 },
-                  children: [new TextRun({ text: 'After walking down', size: 30 })]
-                }),
-                ...rung('', 'What else could be in the pool of available data?', d.expand),
-                ...rung('', 'What is one more grounded next action?', d.nextAction),
                 new Paragraph({
                   heading: HeadingLevel.HEADING_2,
                   spacing: { before: 360, after: 120 },
@@ -410,7 +385,7 @@ Keep all text legible. Do not invent extra content. Do not rewrite the rung labe
                 new Paragraph({
                   spacing: { after: 160 },
                   children: [new TextRun({
-                    text: 'Use one of the prompts below in Gemini or ChatGPT to generate a poster from your ladder. You can edit the prompt before using it.',
+                    text: 'Use one of the prompts below in Gemini or ChatGPT to generate a poster from your moment. You can edit the prompt before using it.',
                     size: 22, color: '4A4641'
                   })]
                 }),
@@ -419,7 +394,7 @@ Keep all text legible. Do not invent extra content. Do not rewrite the rung labe
             }]
           });
           const blob = await Packer.toBlob(doc);
-          window.saveAs(blob, `ladder-${(d.name || 'my').toLowerCase().replace(/\s+/g,'-')}.docx`);
+          window.saveAs(blob, `moment-${(d.name || 'my').toLowerCase().replace(/\s+/g,'-')}.docx`);
           showToast('Word file saved.');
         } catch (err) {
           showToast('Word save failed. Try email instead.');
@@ -429,40 +404,18 @@ Keep all text legible. Do not invent extra content. Do not rewrite the rung labe
 
       else if (type === 'email') {
         const lines = [
-          `My ladder — ${d.name || 'My ladder'}`,
+          `My moment for class — ${d.name || 'My moment'}`,
           '',
-          `6 · Actions:`,
-          `   ${d.r7 || '(left blank)'}`,
+          'My moment, from my perspective:',
           '',
-          `5 · Beliefs:`,
-          `   ${d.r6 || '(left blank)'}`,
+          d.story || '(left blank)',
           '',
-          `4 · Conclusions:`,
-          `   ${d.r5 || '(left blank)'}`,
-          '',
-          `3 · Assumptions:`,
-          `   ${d.r4 || '(left blank)'}`,
-          '',
-          `2 · Select Data:`,
-          `   ${d.r2 || '(left blank)'}`,
-          '',
-          `1 · Pool of Available Data:`,
-          `   ${d.r1 || '(left blank)'}`,
-          '',
-          'After walking down',
-          '',
-          `What else could be in the pool of available data?`,
-          `   ${d.expand || '(left blank)'}`,
-          '',
-          `What is one more grounded next action?`,
-          `   ${d.nextAction || '(left blank)'}`,
-          '',
-          'The upper rungs are not bad. They are normal thinking. The practice is to notice the climb, walk down carefully, widen the data pool, and then act with more choice.',
+          'This does not need to be a perfect analysis. It is a starting point for curiosity in class.',
           '',
           '',
           buildPromptBundle(d)
         ].join('\n');
-        const subject = `My ladder — ${d.name || 'before the day'}`;
+        const subject = `My moment for class — ${d.name || 'before the day'}`;
         const href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines)}`;
         window.location.href = href;
         showToast('Opening your email app…');
@@ -488,7 +441,7 @@ Keep all text legible. Do not invent extra content. Do not rewrite the rung labe
     btn.addEventListener('click', async () => {
       const d = getFormData();
       if (!hasAny(d)) {
-        showToast('Fill in at least one field first.');
+        showToast('Describe your moment first.');
         return;
       }
       await copyPosterPrompt(btn.getAttribute('data-poster-copy'));
@@ -499,7 +452,7 @@ Keep all text legible. Do not invent extra content. Do not rewrite the rung labe
     btn.addEventListener('click', async () => {
       const d = getFormData();
       if (!hasAny(d)) {
-        showToast('Fill in at least one field first.');
+        showToast('Describe your moment first.');
         return;
       }
       const service = btn.getAttribute('data-poster-copy-open');
