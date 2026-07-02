@@ -208,12 +208,15 @@
       r6: (document.getElementById('f_r6')?.value || '').trim(),
       r5: (document.getElementById('f_r5')?.value || '').trim(),
       r4: (document.getElementById('f_r4')?.value || '').trim(),
-      r3: (document.getElementById('f_r3')?.value || '').trim(),
       r2: (document.getElementById('f_r2')?.value || '').trim(),
       r1: (document.getElementById('f_r1')?.value || '').trim(),
+      expand: (document.getElementById('f_expand')?.value || '').trim(),
+      nextAction: (document.getElementById('f_next_action')?.value || '').trim(),
     };
   }
-  function hasAny(d) { return [d.r7, d.r6, d.r5, d.r4, d.r3, d.r2, d.r1].some(v => v.length > 0); }
+  function hasAny(d) {
+    return [d.r7, d.r6, d.r5, d.r4, d.r2, d.r1, d.expand, d.nextAction].some(v => v.length > 0);
+  }
 
   // ========== Poster prompt ==========
   const POSTER_STYLES = {
@@ -244,7 +247,7 @@
     'sky-lemon': 'sky blue, lemon yellow, white, and dark navy text',
     sunset: 'sunset orange, purple, blush pink, and warm off-white',
     'sage-gold': 'sage green, charcoal, soft gold, and warm cream',
-    'mono-red': 'white background, black typography, one precise red accent for the raw-data rung',
+    'mono-red': 'white background, black typography, one precise red accent for the pool of available data',
   };
 
   function getPosterChoices() {
@@ -276,21 +279,26 @@ Subtitle: "${d.name || 'My ladder'}"
 
 Design direction: ${choices.style.title} — ${choices.style.description}.
 Colour direction: ${choices.palette}.${customLine}
-Show seven rungs, top to bottom, using these exact labels and learner notes:
+Show the class Ladder of Inference structure, top to bottom, using these exact labels and learner notes:
 
-7 · Actions: ${d.r7 || '(left blank)'}
-6 · Beliefs: ${d.r6 || '(left blank)'}
-5 · Conclusions: ${d.r5 || '(left blank)'}
-4 · Assumptions: ${d.r4 || '(left blank)'}
-3 · Assigned meaning: ${d.r3 || '(left blank)'}
-2 · Filtered information: ${d.r2 || '(left blank)'}
-1 · Raw data and observations: ${d.r1 || '(left blank)'}
+6 · Actions: ${d.r7 || '(left blank)'}
+5 · Beliefs: ${d.r6 || '(left blank)'}
+4 · Conclusions: ${d.r5 || '(left blank)'}
+3 · Assumptions: ${d.r4 || '(left blank)'}
+2 · Select Data: ${d.r2 || '(left blank)'}
+1 · Pool of Available Data: ${d.r1 || '(left blank)'}
 
-Make it visually clear that the ladder is usually climbed from rung 1 upward, but this reflection is walking it back down to test the thinking.
+After walking down:
+What else could be in the pool of available data? ${d.expand || '(left blank)'}
+What is one more grounded next action? ${d.nextAction || '(left blank)'}
 
-Highlight rung 1 as the only raw data and observations. Keep the other rungs visually connected, but do not make them look wrong or shameful. Use neutral, reflective language.
+Make it visually clear that the mind usually climbs from the pool of available data up to action, while this reflection walks down from action to data to test the thinking.
 
-Bottom caption: "At rung 1, there is only raw data and observations. The other rungs are the thinking to test before acting."
+Include a small reflexive-loop note: "Our beliefs affect which data we select next time."
+
+Keep the upper rungs neutral. They are not bad; they are thinking to test before acting.
+
+Bottom caption: "Walk down to test your thinking. Widen the data pool before choosing the next action."
 
 Keep all text legible. Do not invent extra content. Do not rewrite the rung labels. Avoid clutter, dark backgrounds, and tiny text.`;
   }
@@ -337,7 +345,7 @@ Keep all text legible. Do not invent extra content. Do not rewrite the rung labe
       const type = btn.getAttribute('data-export');
       const d = getFormData();
       if (!hasAny(d)) {
-        showToast('Fill in at least one rung first.');
+        showToast('Fill in at least one field first.');
         return;
       }
 
@@ -374,20 +382,26 @@ Keep all text legible. Do not invent extra content. Do not rewrite the rung labe
                   children: [new TextRun({ text: 'Walking one real work moment down the ladder.', size: 40 })]
                 }),
                 new Paragraph({ children: [new TextRun({ text: `${d.name || 'My ladder'}  ·  ${today}`, color: '7A7268', size: 22 })] }),
-                ...rung(7, 'Actions.', d.r7),
-                ...rung(6, 'Beliefs.', d.r6),
-                ...rung(5, 'Conclusions.', d.r5),
-                ...rung(4, 'Assumptions.', d.r4),
-                ...rung(3, 'Assigned meaning.', d.r3),
-                ...rung(2, 'Filtered information.', d.r2),
-                ...rung(1, 'Raw data and observations.', d.r1),
+                ...rung(6, 'Actions.', d.r7),
+                ...rung(5, 'Beliefs.', d.r6),
+                ...rung(4, 'Conclusions.', d.r5),
+                ...rung(3, 'Assumptions.', d.r4),
+                ...rung(2, 'Select Data.', d.r2),
+                ...rung(1, 'Pool of Available Data.', d.r1),
                 new Paragraph({
                   spacing: { before: 240 },
                   children: [new TextRun({
-                    text: 'At rung 1, there is only raw data and observations. The other rungs are the thinking to test before acting.',
+                    text: 'The upper rungs are not bad. They are normal thinking. The practice is to notice the climb, walk down carefully, widen the data pool, and then act with more choice.',
                     italics: true, size: 22, color: '4A4641'
                   })]
                 }),
+                new Paragraph({
+                  heading: HeadingLevel.HEADING_2,
+                  spacing: { before: 360, after: 120 },
+                  children: [new TextRun({ text: 'After walking down', size: 30 })]
+                }),
+                ...rung('', 'What else could be in the pool of available data?', d.expand),
+                ...rung('', 'What is one more grounded next action?', d.nextAction),
                 new Paragraph({
                   heading: HeadingLevel.HEADING_2,
                   spacing: { before: 360, after: 120 },
@@ -417,28 +431,33 @@ Keep all text legible. Do not invent extra content. Do not rewrite the rung labe
         const lines = [
           `My ladder — ${d.name || 'My ladder'}`,
           '',
-          `7 · Actions:`,
+          `6 · Actions:`,
           `   ${d.r7 || '(left blank)'}`,
           '',
-          `6 · Beliefs:`,
+          `5 · Beliefs:`,
           `   ${d.r6 || '(left blank)'}`,
           '',
-          `5 · Conclusions:`,
+          `4 · Conclusions:`,
           `   ${d.r5 || '(left blank)'}`,
           '',
-          `4 · Assumptions:`,
+          `3 · Assumptions:`,
           `   ${d.r4 || '(left blank)'}`,
           '',
-          `3 · Assigned meaning:`,
-          `   ${d.r3 || '(left blank)'}`,
-          '',
-          `2 · Filtered information:`,
+          `2 · Select Data:`,
           `   ${d.r2 || '(left blank)'}`,
           '',
-          `1 · Raw data and observations:`,
+          `1 · Pool of Available Data:`,
           `   ${d.r1 || '(left blank)'}`,
           '',
-          '— At rung 1, there is only raw data and observations. The other rungs are the thinking to test before acting.',
+          'After walking down',
+          '',
+          `What else could be in the pool of available data?`,
+          `   ${d.expand || '(left blank)'}`,
+          '',
+          `What is one more grounded next action?`,
+          `   ${d.nextAction || '(left blank)'}`,
+          '',
+          'The upper rungs are not bad. They are normal thinking. The practice is to notice the climb, walk down carefully, widen the data pool, and then act with more choice.',
           '',
           '',
           buildPromptBundle(d)
@@ -469,7 +488,7 @@ Keep all text legible. Do not invent extra content. Do not rewrite the rung labe
     btn.addEventListener('click', async () => {
       const d = getFormData();
       if (!hasAny(d)) {
-        showToast('Fill in at least one rung first.');
+        showToast('Fill in at least one field first.');
         return;
       }
       await copyPosterPrompt(btn.getAttribute('data-poster-copy'));
@@ -480,7 +499,7 @@ Keep all text legible. Do not invent extra content. Do not rewrite the rung labe
     btn.addEventListener('click', async () => {
       const d = getFormData();
       if (!hasAny(d)) {
-        showToast('Fill in at least one rung first.');
+        showToast('Fill in at least one field first.');
         return;
       }
       const service = btn.getAttribute('data-poster-copy-open');
