@@ -19,6 +19,74 @@
     close: 'Six tools',
     task: 'Your task'
   };
+  const STORAGE_KEY = 'before-day-systems-thinking:v2';
+  let activeBeat = 'frame';
+  let saveTimer;
+  let isRestoring = true;
+
+  function readSavedState() {
+    try {
+      const raw = window.localStorage?.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' ? parsed : null;
+    } catch {
+      return null;
+    }
+  }
+
+  const savedState = readSavedState();
+
+  function normalizeBeat(beat) {
+    return SECTION_ORDER.includes(beat) ? beat : 'frame';
+  }
+
+  function getStoredFormData() {
+    return {
+      name: (document.getElementById('f_name')?.value || '').trim(),
+      story: (document.getElementById('f_story')?.value || '').trim(),
+    };
+  }
+
+  function getStoredPosterChoices() {
+    return {
+      style: document.querySelector('input[name="poster_style"]:checked')?.value || 'modern',
+      palette: document.getElementById('poster_palette')?.value || 'teal-coral',
+      custom: (document.getElementById('poster_custom')?.value || '').trim(),
+    };
+  }
+
+  function updateSaveStatus(message, saved = false) {
+    const status = document.querySelector('[data-save-status]');
+    const label = status?.querySelector('span');
+    if (!status || !label) return;
+    label.textContent = message;
+    status.classList.toggle('is-saved', saved);
+  }
+
+  function saveState(overrides = {}) {
+    if (isRestoring) return;
+    try {
+      const state = {
+        version: 2,
+        completed: Array.from(completed),
+        lastBeat: normalizeBeat(overrides.lastBeat || activeBeat),
+        form: getStoredFormData(),
+        poster: getStoredPosterChoices(),
+        savedAt: Date.now(),
+      };
+      window.localStorage?.setItem(STORAGE_KEY, JSON.stringify(state));
+      updateSaveStatus('Saved on this device.', true);
+    } catch {
+      updateSaveStatus('Progress cannot be saved in this browser.', false);
+    }
+  }
+
+  function queueSave(overrides = {}) {
+    if (isRestoring) return;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => saveState(overrides), 350);
+  }
 
   // ========== Theme toggle ==========
   const themeBtn = document.querySelector('[data-theme]');
@@ -32,9 +100,13 @@
     }
   });
 
-  // ========== Lock state (in-memory only — no storage) ==========
+  // ========== Lock state ==========
   // Sections unlock one at a time when the learner taps Begin or "I'm done".
-  const completed = new Set(); // beats the user has marked done
+  const completed = new Set(
+    Array.isArray(savedState?.completed)
+      ? savedState.completed.filter(beat => SECTION_ORDER.includes(beat))
+      : []
+  );
 
   function getNext(beat) {
     const i = SECTION_ORDER.indexOf(beat);
@@ -82,11 +154,17 @@
   // ========== Progress bar ==========
   const progressFill = document.querySelector('[data-progress]');
   const stepLabel = document.querySelector('[data-step]');
-  function updateProgress(activeBeat) {
-    const idx = SECTION_ORDER.indexOf(activeBeat);
+  function updateProgress(beat) {
+    const idx = SECTION_ORDER.indexOf(beat);
+    if (idx >= 0) {
+      activeBeat = normalizeBeat(beat);
+    }
     const pct = idx >= 0 ? (idx / (SECTION_ORDER.length - 1)) * 100 : 0;
     if (progressFill) progressFill.style.width = pct + '%';
-    if (stepLabel) stepLabel.textContent = SECTION_LABELS[activeBeat] || '';
+    if (stepLabel) stepLabel.textContent = SECTION_LABELS[beat] || '';
+    if (idx >= 0) {
+      queueSave({ lastBeat: activeBeat });
+    }
   }
 
   // ========== Section observer ==========
@@ -126,6 +204,7 @@
       renderLocks();
       // Scroll to next unlocked section
       const next = getNext(beat);
+      saveState({ lastBeat: next || beat });
       if (next) {
         const nextEl = document.querySelector(`.screen[data-beat="${next}"]`);
         if (nextEl) {
@@ -196,10 +275,6 @@
     });
   });
 
-  // ========== Render initial state ==========
-  renderLocks();
-  updateProgress('frame');
-
   // ========== Form helpers ==========
   function getFormData() {
     return {
@@ -253,6 +328,59 @@
     };
   }
 
+  function setValue(id, value) {
+    const el = document.getElementById(id);
+    if (el && typeof value === 'string') el.value = value;
+  }
+
+  function restoreSavedDraft() {
+    if (!savedState) {
+      updateSaveStatus('Progress saves on this device as you go.');
+      return false;
+    }
+
+    setValue('f_name', savedState.form?.name || '');
+    setValue('f_story', savedState.form?.story || '');
+    setValue('poster_custom', savedState.poster?.custom || '');
+
+    const style = savedState.poster?.style;
+    if (style) {
+      const selectedStyle = Array.from(document.querySelectorAll('input[name="poster_style"]'))
+        .find(input => input.value === style);
+      if (selectedStyle) selectedStyle.checked = true;
+    }
+
+    const palette = savedState.poster?.palette;
+    const paletteSelect = document.getElementById('poster_palette');
+    if (paletteSelect && palette) {
+      paletteSelect.value = palette;
+    }
+
+    updateSaveStatus('Restored saved progress on this device.', true);
+    return true;
+  }
+
+  function getRestoredBeat() {
+    const requested = normalizeBeat(savedState?.lastBeat || 'frame');
+    if (isUnlocked(requested)) return requested;
+
+    const lastCompletedIndex = SECTION_ORDER.reduce((last, beat, index) => {
+      return completed.has(beat) ? Math.max(last, index) : last;
+    }, 0);
+    const nextIndex = Math.min(lastCompletedIndex + 1, SECTION_ORDER.length - 1);
+    return SECTION_ORDER[nextIndex] || 'frame';
+  }
+
+  function scrollToRestoredBeat(beat) {
+    if (!savedState || beat === 'frame') return;
+    const target = document.querySelector(`.screen[data-beat="${beat}"]`);
+    if (!target) return;
+    setTimeout(() => {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      showToast('Welcome back. Your last place was restored.');
+    }, 250);
+  }
+
   function buildPosterPrompt(d, service = 'gemini') {
     const choices = getPosterChoices();
     const serviceLead = service === 'chatgpt'
@@ -268,7 +396,7 @@ Format: portrait A4 poster, suitable for an upcoming class pre-work activity.
 
 Main header: "One Moment To Explore"
 Title: Create a short, neutral title from the story.
-Subtitle: "${d.name || 'My moment'}"
+Learner name to display clearly near the top: "${d.name || 'Learner name'}"
 
 Design direction: ${choices.style.title} — ${choices.style.description}.
 Colour direction: ${choices.palette}.${customLine}
@@ -276,22 +404,30 @@ Story from my perspective:
 ${d.story || '(moment not written yet)'}
 
 Poster goal:
-Create a learner-facing poster that makes this one moment easy to revisit in class. It should feel curious, human, and slightly playful, not like a complaint, judgement, or performance review.
+Create a learner-facing visual case poster. It should make the moment easy for another person to step into: what happened, what the learner noticed, what felt tense, and what is still open or curious. Keep it human, clear, and slightly playful, not like a complaint, judgement, or performance review.
+
+Required layout:
+- Put the learner name clearly near the top, for example "By ${d.name || 'Learner name'}".
+- Include a large readable story panel titled "My moment, from my perspective".
+- Preserve the learner's story text as much as possible. Prioritise exact wording over decoration.
+- If the story is too long to fit exactly, keep the sequence of events, concrete details, thoughts or feelings, action taken, and open question. Do not reduce it to a vague one-line summary.
+- Use a clean case-card layout with readable type. A two-column story panel or several short caption blocks is fine.
 
 Visual treatment:
 - Show the moment as a scene, metaphor, split-screen, comic panel, or symbolic composition that fits the chosen style.
+- Place accompanying graphics around or beside the story panel, not on top of the story text.
 - Use original characters only. If names, teams, or organisations appear in the story, anonymise them visually.
 - Make the tension visible without blaming anyone.
-- Leave space for interpretation. Do not diagnose the situation or complete the Ladder of Inference for me.
+- Leave space for interpretation. Do not diagnose the situation or draw conclusions for the learner.
 
-Include these small caption areas with short, legible text:
+Optional small caption areas, only if there is space:
 1. "What happened"
-2. "What I noticed or felt"
-3. "What I am still curious about"
+2. "What stood out"
+3. "Still curious about"
 
 Footer line: "A moment to explore, not a case to prove."
 
-Keep all text legible. Do not add extra facts that are not in the story. Avoid clutter, dark backgrounds, and tiny text.`;
+Keep all text legible. Do not add extra facts that are not in the story. Avoid clutter, dark backgrounds, tiny text, and decorative elements that compete with the story.`;
   }
 
   function buildPromptBundle(d) {
@@ -312,20 +448,24 @@ Keep all text legible. Do not add extra facts that are not in the story. Avoid c
     output.value = buildPosterPrompt(getFormData(), service);
   }
 
-  async function copyPosterPrompt(service) {
+  async function copyPosterPrompt(service, options = {}) {
     const prompt = buildPosterPrompt(getFormData(), service);
     const output = document.getElementById('poster_prompt');
     if (output) output.value = prompt;
+    const serviceName = service === 'chatgpt' ? 'ChatGPT' : 'Gemini';
     try {
       await navigator.clipboard.writeText(prompt);
-      showToast(service === 'chatgpt' ? 'ChatGPT prompt copied.' : 'Gemini prompt copied.');
+      showToast(options.opening
+        ? `Prompt copied. Paste it into ${serviceName} with Cmd+V.`
+        : `${serviceName} prompt copied.`
+      );
       return true;
     } catch {
       if (output) {
         output.focus();
         output.select();
       }
-      showToast('Prompt ready. Copy it from the box.');
+      showToast(`Prompt ready. Copy it from the box, then paste it into ${serviceName}.`);
       return false;
     }
   }
@@ -428,13 +568,27 @@ Keep all text legible. Do not add extra facts that are not in the story. Avoid c
 
   posterBuilder?.querySelectorAll('input[name="poster_style"], #poster_palette, #poster_custom').forEach(control => {
     const eventName = control.tagName === 'TEXTAREA' ? 'input' : 'change';
-    control.addEventListener(eventName, () => refreshPosterPrompt('gemini'));
+    control.addEventListener(eventName, () => {
+      refreshPosterPrompt('gemini');
+      queueSave();
+    });
   });
 
   document.querySelector('[data-form]')?.addEventListener('input', (event) => {
     if (!posterBuilder) return;
     if (event.target?.id === 'poster_prompt') return;
     refreshPosterPrompt('gemini');
+    queueSave();
+  });
+
+  document.querySelector('[data-clear-progress]')?.addEventListener('click', () => {
+    try {
+      window.localStorage?.removeItem(STORAGE_KEY);
+      updateSaveStatus('Saved progress cleared on this device.');
+      showToast('Saved progress cleared.');
+    } catch {
+      showToast('Could not clear saved progress.');
+    }
   });
 
   document.querySelectorAll('[data-poster-copy]').forEach(btn => {
@@ -456,11 +610,24 @@ Keep all text legible. Do not add extra facts that are not in the story. Avoid c
         return;
       }
       const service = btn.getAttribute('data-poster-copy-open');
-      await copyPosterPrompt(service);
-      window.open(service === 'chatgpt' ? 'https://chatgpt.com/' : 'https://gemini.google.com/app', '_blank', 'noopener');
+      const url = service === 'chatgpt' ? 'https://chatgpt.com/' : 'https://gemini.google.com/app';
+      const newTab = window.open('', '_blank');
+      await copyPosterPrompt(service, { opening: true });
+      if (newTab) {
+        newTab.opener = null;
+        newTab.location.href = url;
+      } else {
+        window.open(url, '_blank', 'noopener');
+      }
     });
   });
 
+  restoreSavedDraft();
+  renderLocks();
+  const restoredBeat = getRestoredBeat();
+  updateProgress(restoredBeat);
   refreshPosterPrompt('gemini');
+  isRestoring = false;
+  scrollToRestoredBeat(restoredBeat);
 
 })();

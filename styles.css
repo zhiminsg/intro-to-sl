@@ -1129,6 +1129,38 @@ main { padding-top: 58px; }
 .rules ol { margin: 12px 0 0; padding-left: 22px; }
 .rules li { margin: 8px 0; color: var(--ink-2); font-size: 15px; line-height: 1.55; }
 
+.save-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: -6px 0 22px;
+  padding: 10px 12px 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bg) 72%, var(--paper));
+  color: var(--ink-3);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.save-status.is-saved span {
+  color: var(--ink-2);
+}
+.save-status button {
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 999px;
+}
+.save-status button:hover {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
 .ladder-form { display: grid; gap: 16px; }
 .ladder-form__name {
   display: grid; gap: 8px;
@@ -1558,6 +1590,13 @@ main { padding-top: 58px; }
   padding-inline: 14px;
 }
 @media (max-width: 430px) {
+  .save-status {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .save-status button {
+    padding-inline: 0;
+  }
   .poster-launch,
   .export__row {
     grid-template-columns: 1fr;
