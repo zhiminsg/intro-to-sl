@@ -1,5 +1,5 @@
 /* =====================================================
-   Before the day · Systems Thinking
+   Before the day · Systems Leadership
    App: locking, progress, exports
    ===================================================== */
 
@@ -10,16 +10,16 @@
   const SECTION_LABELS = {
     frame: 'Frame',
     intro: 'Why',
-    '1': 'Levels',
-    '2': 'Tension',
-    '3': 'Success',
-    '4': 'Advocacy',
-    '5': 'Model',
-    '6': 'Ladder',
+    '1': 'Levels of Perspective',
+    '2': 'Creative Tension Model',
+    '3': 'Core Theory of Success',
+    '4': 'Inquiry and Advocacy',
+    '5': 'Mental Models',
+    '6': 'Ladder of Inference',
     close: 'Six tools',
     task: 'Your task'
   };
-  const STORAGE_KEY = 'before-day-systems-thinking:v2';
+  const STORAGE_KEY = 'before-day-systems-leadership:v2';
   let activeBeat = 'frame';
   let saveTimer;
   let isRestoring = true;
@@ -143,7 +143,7 @@
       li.classList.toggle('is-locked', !unlocked);
       li.classList.toggle('is-done', completed.has(beat));
     });
-    // "Done" buttons — mark as done if completed
+    // "Done" buttons: mark as done if completed
     document.querySelectorAll('[data-done]').forEach(btn => {
       const beat = btn.getAttribute('data-done');
       btn.classList.toggle('is-done', completed.has(beat));
@@ -194,13 +194,32 @@
     }, ms);
   }
 
+  // ========== Video embeds ==========
+  document.querySelectorAll('[data-video-src]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const src = btn.getAttribute('data-video-src');
+      const title = btn.getAttribute('data-video-title') || 'Embedded video';
+      const frame = btn.closest('.video-card__frame');
+      if (!src || !frame) return;
+
+      const iframe = document.createElement('iframe');
+      iframe.src = src;
+      iframe.title = title;
+      iframe.referrerPolicy = 'strict-origin-when-cross-origin';
+      iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen';
+      iframe.allowFullscreen = true;
+
+      frame.replaceChildren(iframe);
+    });
+  });
+
   // ========== "I'm done" buttons ==========
   document.querySelectorAll('[data-done]').forEach(btn => {
     btn.addEventListener('click', () => {
       const beat = btn.getAttribute('data-done');
       completed.add(beat);
       btn.classList.add('is-done');
-      btn.textContent = "Done — next part unlocked";
+      btn.textContent = "Done, next part unlocked";
       renderLocks();
       // Scroll to next unlocked section
       const next = getNext(beat);
@@ -381,30 +400,27 @@
     }, 250);
   }
 
-  function buildPosterPrompt(d, service = 'gemini') {
+  function buildPosterPrompt(d) {
     const choices = getPosterChoices();
-    const serviceLead = service === 'chatgpt'
-      ? 'Create a polished poster image from the content below.'
-      : 'Generate a polished poster image from the content below.';
     const customLine = choices.custom
       ? `\nAdditional look and feel from me: ${choices.custom}\n`
       : '';
 
-    return `${serviceLead}
+    return `Create a polished poster image from the content below.
 
-Format: portrait A4 poster, suitable for an upcoming class pre-work activity.
+Format: portrait A4 poster, suitable for an upcoming Systems Leadership class pre-work activity.
 
 Main header: "One Moment To Explore"
-Title: Create a short, neutral title from the story.
+Title: Create a short, neutral title from the situation.
 Learner name to display clearly near the top: "${d.name || 'Learner name'}"
 
-Design direction: ${choices.style.title} — ${choices.style.description}.
+Design direction: ${choices.style.title}: ${choices.style.description}.
 Colour direction: ${choices.palette}.${customLine}
-Story from my perspective:
+Situation from my perspective:
 ${d.story || '(moment not written yet)'}
 
 Poster goal:
-Create a learner-facing visual case poster. It should make the moment easy for another person to step into: what happened, what the learner noticed, what felt tense, and what is still open or curious. Keep it human, clear, and slightly playful, not like a complaint, judgement, or performance review.
+Create a learner-facing visual case poster for a PA Systems Leadership class. It should make the real situation easy for another person to step into: what happened, what the learner noticed, what felt important, difficult, or tense, and what is still open or curious. Keep it human, clear, and slightly playful, not like a complaint, judgement, or performance review.
 
 Required layout:
 - Put the learner name clearly near the top, for example "By ${d.name || 'Learner name'}".
@@ -414,10 +430,10 @@ Required layout:
 - Use a clean case-card layout with readable type. A two-column story panel or several short caption blocks is fine.
 
 Visual treatment:
-- Show the moment as a scene, metaphor, split-screen, comic panel, or symbolic composition that fits the chosen style.
+- Show the situation as a scene, metaphor, split-screen, comic panel, or symbolic composition that fits the chosen style.
 - Place accompanying graphics around or beside the story panel, not on top of the story text.
 - Use original characters only. If names, teams, or organisations appear in the story, anonymise them visually.
-- Make the tension visible without blaming anyone.
+- Make the challenge visible without blaming anyone.
 - Leave space for interpretation. Do not diagnose the situation or draw conclusions for the learner.
 
 Optional small caption areas, only if there is space:
@@ -432,40 +448,32 @@ Keep all text legible. Do not add extra facts that are not in the story. Avoid c
 
   function buildPromptBundle(d) {
     return [
-      'Poster prompt for Gemini',
-      '========================',
-      buildPosterPrompt(d, 'gemini'),
-      '',
-      'Poster prompt for ChatGPT',
-      '=========================',
-      buildPosterPrompt(d, 'chatgpt')
+      'Poster prompt',
+      '=============',
+      buildPosterPrompt(d)
     ].join('\n');
   }
 
-  function refreshPosterPrompt(service = 'gemini') {
+  function refreshPosterPrompt() {
     const output = document.getElementById('poster_prompt');
     if (!output) return;
-    output.value = buildPosterPrompt(getFormData(), service);
+    output.value = buildPosterPrompt(getFormData());
   }
 
-  async function copyPosterPrompt(service, options = {}) {
-    const prompt = buildPosterPrompt(getFormData(), service);
+  async function copyPosterPrompt() {
+    const prompt = buildPosterPrompt(getFormData());
     const output = document.getElementById('poster_prompt');
     if (output) output.value = prompt;
-    const serviceName = service === 'chatgpt' ? 'ChatGPT' : 'Gemini';
     try {
       await navigator.clipboard.writeText(prompt);
-      showToast(options.opening
-        ? `Prompt copied. Paste it into ${serviceName} with Cmd+V.`
-        : `${serviceName} prompt copied.`
-      );
+      showToast('Prompt copied. Paste it into your chosen tool.');
       return true;
     } catch {
       if (output) {
         output.focus();
         output.select();
       }
-      showToast(`Prompt ready. Copy it from the box, then paste it into ${serviceName}.`);
+      showToast('Prompt ready. Copy it from the box, then paste it into your chosen tool.');
       return false;
     }
   }
@@ -497,11 +505,11 @@ Keep all text legible. Do not add extra facts that are not in the story. Avoid c
             sections: [{
               properties: {},
               children: [
-                new Paragraph({ children: [new TextRun({ text: 'BEFORE THE DAY  ·  SYSTEMS THINKING', bold: true, color: '0E5A55', size: 18 })] }),
+                new Paragraph({ children: [new TextRun({ text: 'BEFORE THE DAY  ·  SYSTEMS LEADERSHIP', bold: true, color: '0E5A55', size: 18 })] }),
                 new Paragraph({
                   heading: HeadingLevel.HEADING_1,
                   spacing: { before: 100, after: 100 },
-                  children: [new TextRun({ text: 'One real moment for class.', size: 40 })]
+                  children: [new TextRun({ text: 'One real situation for class.', size: 40 })]
                 }),
                 new Paragraph({ children: [new TextRun({ text: `${d.name || 'My moment'}  ·  ${today}`, color: '7A7268', size: 22 })] }),
                 new Paragraph({
@@ -513,19 +521,19 @@ Keep all text legible. Do not add extra facts that are not in the story. Avoid c
                 new Paragraph({
                   spacing: { before: 180, after: 80 },
                   children: [new TextRun({
-                    text: 'This does not need to be a perfect analysis. It is a starting point for curiosity in class.',
+                    text: 'You are bringing a moment, not a perfect analysis. It is a starting point for curiosity in class.',
                     italics: true, size: 22, color: '4A4641'
                   })]
                 }),
                 new Paragraph({
                   heading: HeadingLevel.HEADING_2,
                   spacing: { before: 360, after: 120 },
-                  children: [new TextRun({ text: 'Poster prompts', size: 30 })]
+                  children: [new TextRun({ text: 'Poster prompt', size: 30 })]
                 }),
                 new Paragraph({
                   spacing: { after: 160 },
                   children: [new TextRun({
-                    text: 'Use one of the prompts below in Gemini or ChatGPT to generate a poster from your moment. You can edit the prompt before using it.',
+                    text: 'Use the prompt below in a poster or image-generation tool of your choice. You can edit the prompt before using it.',
                     size: 22, color: '4A4641'
                   })]
                 }),
@@ -544,18 +552,18 @@ Keep all text legible. Do not add extra facts that are not in the story. Avoid c
 
       else if (type === 'email') {
         const lines = [
-          `My moment for class — ${d.name || 'My moment'}`,
+          `My moment for Systems Leadership class: ${d.name || 'My moment'}`,
           '',
           'My moment, from my perspective:',
           '',
           d.story || '(left blank)',
           '',
-          'This does not need to be a perfect analysis. It is a starting point for curiosity in class.',
+          'You are bringing a moment, not a perfect analysis. It is a starting point for curiosity in class.',
           '',
           '',
           buildPromptBundle(d)
         ].join('\n');
-        const subject = `My moment for class — ${d.name || 'before the day'}`;
+        const subject = `My moment for Systems Leadership class: ${d.name || 'before the day'}`;
         const href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines)}`;
         window.location.href = href;
         showToast('Opening your email app…');
@@ -569,7 +577,7 @@ Keep all text legible. Do not add extra facts that are not in the story. Avoid c
   posterBuilder?.querySelectorAll('input[name="poster_style"], #poster_palette, #poster_custom').forEach(control => {
     const eventName = control.tagName === 'TEXTAREA' ? 'input' : 'change';
     control.addEventListener(eventName, () => {
-      refreshPosterPrompt('gemini');
+      refreshPosterPrompt();
       queueSave();
     });
   });
@@ -577,7 +585,7 @@ Keep all text legible. Do not add extra facts that are not in the story. Avoid c
   document.querySelector('[data-form]')?.addEventListener('input', (event) => {
     if (!posterBuilder) return;
     if (event.target?.id === 'poster_prompt') return;
-    refreshPosterPrompt('gemini');
+    refreshPosterPrompt();
     queueSave();
   });
 
@@ -598,27 +606,7 @@ Keep all text legible. Do not add extra facts that are not in the story. Avoid c
         showToast('Describe your moment first.');
         return;
       }
-      await copyPosterPrompt(btn.getAttribute('data-poster-copy'));
-    });
-  });
-
-  document.querySelectorAll('[data-poster-copy-open]').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const d = getFormData();
-      if (!hasAny(d)) {
-        showToast('Describe your moment first.');
-        return;
-      }
-      const service = btn.getAttribute('data-poster-copy-open');
-      const url = service === 'chatgpt' ? 'https://chatgpt.com/' : 'https://gemini.google.com/app';
-      const newTab = window.open('', '_blank');
-      await copyPosterPrompt(service, { opening: true });
-      if (newTab) {
-        newTab.opener = null;
-        newTab.location.href = url;
-      } else {
-        window.open(url, '_blank', 'noopener');
-      }
+      await copyPosterPrompt();
     });
   });
 
@@ -626,7 +614,7 @@ Keep all text legible. Do not add extra facts that are not in the story. Avoid c
   renderLocks();
   const restoredBeat = getRestoredBeat();
   updateProgress(restoredBeat);
-  refreshPosterPrompt('gemini');
+  refreshPosterPrompt();
   isRestoring = false;
   scrollToRestoredBeat(restoredBeat);
 

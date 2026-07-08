@@ -1,5 +1,5 @@
 /* =====================================================
-   Before the day · Systems Thinking
+   Before the day · Systems Leadership
    Phone-first, classy editorial, locked progression
    ===================================================== */
 
@@ -249,6 +249,16 @@ main { padding-top: 58px; }
   color: rgba(255,255,255,0.92);
   max-width: 38ch;
 }
+.frame__lede a {
+  color: #fff4d8;
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+.frame__lede a:hover {
+  color: #ffd99f;
+}
 .frame__cta {
   display: inline-block;
   margin-top: 28px;
@@ -353,30 +363,48 @@ main { padding-top: 58px; }
   border: 0;
 }
 .video-card__poster {
-  position: relative;
-  display: block;
-  overflow: hidden;
-  border-radius: 12px;
-  aspect-ratio: 16 / 9;
-  background: #000;
-}
-.video-card__poster img {
-  width: 100%; height: 100%;
-  object-fit: cover;
-  transition: transform var(--t-med);
-}
-.video-card__poster:hover img { transform: scale(1.02); }
-.video-card__poster:hover { text-decoration: none; }
-.video-card__play {
   position: absolute;
   inset: 0;
   display: grid;
   place-items: center;
-  pointer-events: none;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background:
+    linear-gradient(135deg, rgba(14, 90, 85, 0.78), rgba(10, 16, 20, 0.94)),
+    radial-gradient(circle at 70% 20%, rgba(255, 217, 159, 0.36), transparent 34%),
+    #0a1014;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+}
+.video-card__poster:hover,
+.video-card__poster:focus-visible {
+  background:
+    linear-gradient(135deg, rgba(14, 90, 85, 0.9), rgba(10, 16, 20, 0.96)),
+    radial-gradient(circle at 70% 20%, rgba(255, 217, 159, 0.44), transparent 34%),
+    #0a1014;
+}
+.video-card__poster:hover { text-decoration: none; }
+.video-card__play {
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #f7f1e6;
+  color: #0a1014;
+  font-size: 30px;
+  line-height: 1;
+  box-shadow: var(--shadow-md);
+  transform: translateX(2px);
 }
 .video-card__tag {
   position: absolute;
-  top: 12px; left: 12px;
+  left: 14px;
+  bottom: 14px;
   background: rgba(0,0,0,0.72);
   color: #fff;
   padding: 6px 12px;
@@ -553,10 +581,10 @@ main { padding-top: 58px; }
 .link-card__cta:hover { background: var(--bg); text-decoration: none; }
 .link-card__note { font-size: 13px; color: var(--ink-3); margin-top: 12px; font-style: italic; }
 
-.loi-card {
+.inference-card {
   padding: 20px;
 }
-.loi-card__eyebrow {
+.inference-card__eyebrow {
   margin: 0 0 8px;
   font-size: 11px;
   letter-spacing: 0.18em;
@@ -564,7 +592,7 @@ main { padding-top: 58px; }
   color: var(--accent);
   font-weight: 700;
 }
-.loi-card__title {
+.inference-card__title {
   font-family: var(--font-display);
   font-size: 26px;
   line-height: 1.1;
@@ -572,28 +600,28 @@ main { padding-top: 58px; }
   margin: 0 0 18px;
   color: var(--ink);
 }
-.loi-card__intro {
+.inference-card__intro {
   margin: -6px 0 16px;
   color: var(--ink-2);
   font-size: 15.5px;
   line-height: 1.5;
 }
-.loi-steps {
+.inference-steps {
   list-style: none;
   padding: 0;
   margin: 0;
   display: grid;
   gap: 10px;
 }
-.loi-steps li {
+.inference-steps li {
   display: grid;
   grid-template-columns: 34px 1fr;
   gap: 10px 12px;
   padding: 12px 0;
   border-bottom: 1px dashed var(--line);
 }
-.loi-steps li:last-child { border-bottom: 0; }
-.loi-steps span {
+.inference-steps li:last-child { border-bottom: 0; }
+.inference-steps span {
   grid-row: span 2;
   display: grid;
   place-items: center;
@@ -605,18 +633,18 @@ main { padding-top: 58px; }
   font-weight: 800;
   font-size: 13px;
 }
-.loi-steps strong {
+.inference-steps strong {
   color: var(--ink);
   font-size: 15.5px;
   line-height: 1.25;
 }
-.loi-steps em {
+.inference-steps em {
   color: var(--ink-2);
   font-size: 14.5px;
   font-style: normal;
   line-height: 1.45;
 }
-.loi-card__turn {
+.inference-card__turn {
   margin: 18px 0 14px;
   padding: 14px 16px;
   border-radius: 10px;
@@ -625,23 +653,23 @@ main { padding-top: 58px; }
   font-size: 15px;
   line-height: 1.5;
 }
-.loi-questions {
+.inference-questions {
   margin: 18px 0 14px;
   padding: 16px 18px;
   border-radius: 12px;
   background: var(--bg-2);
   border: 1px solid var(--line);
 }
-.loi-questions p {
+.inference-questions p {
   margin: 0 0 8px;
   color: var(--ink);
   font-size: 15px;
 }
-.loi-questions ul {
+.inference-questions ul {
   margin: 0;
   padding-left: 18px;
 }
-.loi-questions li {
+.inference-questions li {
   margin: 7px 0;
   color: var(--ink-2);
   font-size: 14.5px;
@@ -752,7 +780,7 @@ main { padding-top: 58px; }
 }
 .done.is-done::before { content: '✓ '; }
 
-/* ========== Beat 4 — ladder figure ========== */
+/* ========== Ladder figure ========== */
 .ladder-figure {
   margin: 24px 0;
   padding: 22px 16px;
@@ -761,12 +789,12 @@ main { padding-top: 58px; }
   border: 1px solid var(--line);
   box-shadow: var(--shadow-sm);
 }
-.loi-map {
+.inference-map {
   display: grid;
   gap: 16px;
   align-items: center;
 }
-.loi-ladder {
+.inference-ladder {
   display: grid;
   gap: 0;
 }
@@ -783,7 +811,7 @@ main { padding-top: 58px; }
 .ladder-figure--class .rung:nth-child(even) {
   background: var(--paper);
 }
-.loi-pool {
+.inference-pool {
   display: grid;
   gap: 4px;
   padding: 15px 16px;
@@ -793,15 +821,15 @@ main { padding-top: 58px; }
   font-size: 15px;
   line-height: 1.35;
 }
-.loi-pool strong {
+.inference-pool strong {
   font-family: var(--font-display);
   font-size: 20px;
   font-weight: 400;
 }
-.loi-pool span {
+.inference-pool span {
   color: rgba(255, 255, 255, 0.88);
 }
-.loi-loop {
+.inference-loop {
   padding: 16px 18px;
   border: 1px dashed color-mix(in srgb, var(--accent) 62%, var(--line));
   border-radius: 14px;
@@ -809,7 +837,7 @@ main { padding-top: 58px; }
   color: var(--ink);
   position: relative;
 }
-.loi-loop::before {
+.inference-loop::before {
   content: '↺';
   display: block;
   width: 34px;
@@ -823,13 +851,13 @@ main { padding-top: 58px; }
   text-align: center;
   font-weight: 800;
 }
-.loi-loop p {
+.inference-loop p {
   margin: 0;
   font-size: 14.5px;
   line-height: 1.45;
 }
-.loi-loop p + p { margin-top: 4px; }
-.loi-loop strong {
+.inference-loop p + p { margin-top: 4px; }
+.inference-loop strong {
   color: var(--accent);
 }
 .rung {
@@ -866,19 +894,19 @@ main { padding-top: 58px; }
   text-align: center;
 }
 
-.loi-use-grid {
+.inference-use-grid {
   display: grid;
   gap: 14px;
   margin: 24px 0;
 }
-.loi-use-grid article {
+.inference-use-grid article {
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 18px;
   box-shadow: var(--shadow-sm);
 }
-.loi-use-grid__label {
+.inference-use-grid__label {
   margin: 0 0 8px;
   font-size: 11px;
   letter-spacing: 0.16em;
@@ -886,55 +914,18 @@ main { padding-top: 58px; }
   color: var(--accent);
   font-weight: 800;
 }
-.loi-use-grid h3 {
+.inference-use-grid h3 {
   margin: 0 0 8px;
   font-family: var(--font-display);
   font-weight: 400;
   font-size: 24px;
   color: var(--ink);
 }
-.loi-use-grid p:not(.loi-use-grid__label) {
+.inference-use-grid p:not(.inference-use-grid__label) {
   margin: 0;
   font-size: 15.5px;
   line-height: 1.5;
   color: var(--ink-2);
-}
-
-/* ========== Beat 5 — two questions ========== */
-.two-q {
-  margin: 24px 0;
-  display: grid;
-  gap: 14px;
-}
-.two-q__item {
-  display: grid;
-  grid-template-columns: 48px 1fr;
-  align-items: start;
-  gap: 16px;
-  padding: 18px 18px;
-  background: var(--paper);
-  border-radius: 14px;
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow-sm);
-}
-.two-q__num {
-  font-family: var(--font-display);
-  font-size: 32px;
-  line-height: 1;
-  color: var(--accent);
-  margin: 0;
-}
-.two-q__t {
-  margin: 0;
-  font-size: 17px;
-  line-height: 1.45;
-  color: var(--ink);
-}
-.two-q__t em {
-  display: inline;
-  color: var(--accent);
-  font-weight: 700;
-  font-style: italic;
 }
 
 .advocacy-grid {
@@ -973,7 +964,7 @@ main { padding-top: 58px; }
   line-height: 1.45;
 }
 
-/* ========== Beat 6 — loop figure ========== */
+/* ========== Core Theory loop figure ========== */
 .loopfig {
   margin: 24px 0;
   padding: 22px;
@@ -1061,7 +1052,7 @@ main { padding-top: 58px; }
   max-width: 22ch;
 }
 
-/* ===== The six framework — BIG and BOLD ===== */
+/* ===== The six framework: BIG and BOLD ===== */
 .six {
   list-style: none;
   padding: 0;
@@ -1524,75 +1515,6 @@ main { padding-top: 58px; }
   font-size: 12.5px;
   line-height: 1.55;
 }
-.poster-launch {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-.brand-btn {
-  display: grid;
-  grid-template-columns: 42px 1fr;
-  align-items: center;
-  gap: 12px;
-  min-height: 76px;
-  padding: 14px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--paper);
-  color: var(--ink);
-  text-align: left;
-  cursor: pointer;
-  box-shadow: var(--shadow-sm);
-  transition: transform var(--t-fast), border-color var(--t-fast), background var(--t-fast);
-}
-.brand-btn:hover {
-  transform: translateY(-1px);
-  border-color: var(--line-2);
-  background: color-mix(in srgb, var(--paper) 82%, var(--bg));
-}
-.brand-btn__mark {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-  color: #fff;
-}
-.brand-btn__mark svg {
-  width: 25px;
-  height: 25px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.brand-btn--gemini .brand-btn__mark {
-  background: linear-gradient(135deg, #5d8cff, #9b72ff 52%, #f06aa6);
-}
-.brand-btn--gemini .brand-btn__mark svg {
-  fill: currentColor;
-  stroke: none;
-}
-.brand-btn--chatgpt .brand-btn__mark {
-  background: #111;
-}
-[data-theme-dark] .brand-btn--chatgpt .brand-btn__mark {
-  background: #f3ece1;
-  color: #111;
-}
-.brand-btn strong {
-  display: block;
-  font-size: 16px;
-  line-height: 1.2;
-}
-.brand-btn em {
-  display: block;
-  margin-top: 4px;
-  color: var(--ink-3);
-  font-size: 12.5px;
-  line-height: 1.35;
-}
 .prompt-help {
   display: grid;
   gap: 10px;
@@ -1619,7 +1541,6 @@ main { padding-top: 58px; }
   .save-status button {
     padding-inline: 0;
   }
-  .poster-launch,
   .export__row {
     grid-template-columns: 1fr;
   }
@@ -1669,10 +1590,10 @@ main { padding-top: 58px; }
 /* ========== Larger viewports ========== */
 @media (min-width: 720px) {
   .screen { padding-block: clamp(48px, 6vw, 80px); }
-  .loi-map {
+  .inference-map {
     grid-template-columns: minmax(0, 1.35fr) minmax(220px, 0.65fr);
   }
-  .loi-use-grid {
+  .inference-use-grid {
     grid-template-columns: repeat(3, 1fr);
   }
 }
