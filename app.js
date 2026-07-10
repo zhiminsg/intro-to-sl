@@ -50,6 +50,7 @@
 
   function getStoredPosterChoices() {
     return {
+      gender: document.getElementById('f_gender')?.value || '',
       style: document.querySelector('input[name="poster_style"]:checked')?.value || 'modern',
       palette: document.getElementById('poster_palette')?.value || 'teal-coral',
       custom: (document.getElementById('poster_custom')?.value || '').trim(),
@@ -298,14 +299,50 @@
   function getFormData() {
     return {
       name: (document.getElementById('f_name')?.value || '').trim(),
+      gender: document.getElementById('f_gender')?.value || '',
       story: (document.getElementById('f_story')?.value || '').trim(),
     };
   }
-  function hasAny(d) {
-    return d.story.length > 0;
+
+  function validateRequiredFields(d) {
+    const requiredFields = [
+      {
+        complete: d.name.length > 0,
+        element: document.getElementById('f_name'),
+        label: 'your name'
+      },
+      {
+        complete: d.gender.length > 0,
+        element: document.getElementById('f_gender'),
+        label: 'your gender'
+      },
+      {
+        complete: d.story.length > 0,
+        element: document.getElementById('f_story'),
+        label: 'Your moment'
+      }
+    ];
+    const missing = requiredFields.filter(field => !field.complete);
+    if (!missing.length) return true;
+
+    const labels = missing.map(field => field.label);
+    const message = labels.length === 1
+      ? `Please complete ${labels[0]} first.`
+      : `Please complete ${labels.slice(0, -1).join(', ')} and ${labels.at(-1)} first.`;
+    showToast(message);
+    missing[0].element?.focus({ preventScroll: true });
+    missing[0].element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return false;
   }
 
   // ========== Poster prompt ==========
+  const LEARNER_GENDERS = {
+    female: 'Female',
+    male: 'Male',
+    'non-binary': 'Non-binary',
+    'prefer-not-to-say': 'Not specified'
+  };
+
   const POSTER_STYLES = {
     modern: {
       title: 'Modern clean',
@@ -360,6 +397,7 @@
 
     setValue('f_name', savedState.form?.name || '');
     setValue('f_story', savedState.form?.story || '');
+    setValue('f_gender', savedState.poster?.gender || '');
     setValue('poster_custom', savedState.poster?.custom || '');
 
     const style = savedState.poster?.style;
@@ -413,6 +451,7 @@ Format: portrait A4 poster, suitable for an upcoming Systems Leadership class pr
 Main header: "One Moment To Explore"
 Title: Create a short, neutral title from the situation.
 Learner name to display clearly near the top: "${d.name || 'Learner name'}"
+Learner gender: ${LEARNER_GENDERS[d.gender] || 'Not specified'}
 
 Design direction: ${choices.style.title}: ${choices.style.description}.
 Colour direction: ${choices.palette}.${customLine}
@@ -457,25 +496,72 @@ Keep all text legible. Do not add extra facts that are not in the story. Avoid c
   function refreshPosterPrompt() {
     const output = document.getElementById('poster_prompt');
     if (!output) return;
-    output.value = buildPosterPrompt(getFormData());
+    const d = getFormData();
+    output.value = d.name && d.gender && d.story
+      ? buildPosterPrompt(d)
+      : 'Complete your name, gender selection and Your moment to generate the poster prompt.';
   }
 
-  async function copyPosterPrompt() {
+  function showCopyButtonStatus(button, message) {
+    if (!button) return;
+    const originalLabel = button.dataset.originalLabel || button.textContent;
+    button.dataset.originalLabel = originalLabel;
+    button.textContent = message;
+    setTimeout(() => {
+      button.textContent = originalLabel;
+    }, 2200);
+  }
+
+  // Try the synchronous route first while the browser's click permission is active.
+  async function copyPosterPrompt(button) {
     const prompt = buildPosterPrompt(getFormData());
     const output = document.getElementById('poster_prompt');
     if (output) output.value = prompt;
+
+    let copied = false;
+    const copyField = document.createElement('textarea');
+    copyField.value = prompt;
+    copyField.setAttribute('aria-hidden', 'true');
+    copyField.tabIndex = -1;
+    copyField.style.position = 'fixed';
+    copyField.style.opacity = '0';
+    copyField.style.pointerEvents = 'none';
+    document.body.appendChild(copyField);
+
     try {
-      await navigator.clipboard.writeText(prompt);
-      showToast('Prompt copied. Paste it into your chosen tool.');
-      return true;
+      copyField.focus();
+      copyField.select();
+      copyField.setSelectionRange(0, copyField.value.length);
+      copied = document.execCommand('copy');
     } catch {
+      copied = false;
+    } finally {
+      copyField.remove();
+    }
+
+    if (!copied) {
+      try {
+        if (!navigator.clipboard?.writeText) throw new Error('Clipboard API unavailable');
+        await navigator.clipboard.writeText(prompt);
+        copied = true;
+      } catch {
+        copied = false;
+      }
+    }
+
+    if (!copied) {
       if (output) {
         output.focus();
         output.select();
       }
-      showToast('Prompt ready. Copy it from the box, then paste it into your chosen tool.');
+      showCopyButtonStatus(button, 'Prompt selected');
+      showToast('Your browser blocked automatic copying. The full prompt is selected; use your device’s Copy command.');
       return false;
     }
+
+    showCopyButtonStatus(button, 'Copied');
+    showToast('Prompt copied. Paste it into your chosen tool.');
+    return true;
   }
 
   // ========== Export buttons ==========
@@ -483,10 +569,7 @@ Keep all text legible. Do not add extra facts that are not in the story. Avoid c
     btn.addEventListener('click', async () => {
       const type = btn.getAttribute('data-export');
       const d = getFormData();
-      if (!hasAny(d)) {
-        showToast('Describe your moment first.');
-        return;
-      }
+      if (!validateRequiredFields(d)) return;
 
       if (type === 'docx') {
         try {
@@ -574,7 +657,7 @@ Keep all text legible. Do not add extra facts that are not in the story. Avoid c
   // ========== Poster builder ==========
   const posterBuilder = document.querySelector('[data-poster-builder]');
 
-  posterBuilder?.querySelectorAll('input[name="poster_style"], #poster_palette, #poster_custom').forEach(control => {
+  posterBuilder?.querySelectorAll('input[name="poster_style"], #f_gender, #poster_palette, #poster_custom').forEach(control => {
     const eventName = control.tagName === 'TEXTAREA' ? 'input' : 'change';
     control.addEventListener(eventName, () => {
       refreshPosterPrompt();
@@ -602,11 +685,8 @@ Keep all text legible. Do not add extra facts that are not in the story. Avoid c
   document.querySelectorAll('[data-poster-copy]').forEach(btn => {
     btn.addEventListener('click', async () => {
       const d = getFormData();
-      if (!hasAny(d)) {
-        showToast('Describe your moment first.');
-        return;
-      }
-      await copyPosterPrompt();
+      if (!validateRequiredFields(d)) return;
+      await copyPosterPrompt(btn);
     });
   });
 

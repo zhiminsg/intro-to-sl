@@ -7,7 +7,7 @@
 <meta name="description" content="A short, phone-first look at Systems Leadership. About thirty minutes. Six tools. One task." />
 <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
 <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=gambarino@400&f[]=satoshi@400,500,700,900&display=swap" />
-<link rel="stylesheet" href="styles.css?v=20260708-video-fix" />
+<link rel="stylesheet" href="styles.css?v=20260710-required-fields" />
 <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='%230e5a55'/></svg>" />
 </head>
 <body>
@@ -552,19 +552,23 @@
     <button type="button" data-clear-progress>Forget saved progress</button>
   </div>
 
+  <p class="required-note">Please complete the fields marked <strong>Required</strong> before copying your prompt.</p>
+
   <form class="ladder-form story-form" data-form>
-    <label class="ladder-form__name">
-      <span>Your name <em>(shown clearly on your poster and saved page)</em></span>
-      <input type="text" name="name" id="f_name" placeholder="e.g. Tan Wei Ming" autocomplete="off" />
+    <label class="ladder-form__name required-field">
+      <span class="required-line">Your name <strong class="required-pill">Required</strong></span>
+      <em>Shown clearly on your poster and saved page.</em>
+      <input type="text" name="name" id="f_name" placeholder="e.g. Tan Wei Ming" autocomplete="name" required />
     </label>
 
     <div class="story-card">
       <p class="story-card__label">Your moment</p>
       <h3>Tell the story from your perspective.</h3>
       <p class="story-card__prompt">Describe one real work, community, or personal situation you want to work on, improve, or understand better. What happened? Who was involved? What did you notice? What did you feel or think? What did you do next? What do you still wonder about?</p>
-      <label>
-        <span>Bring a work, community, or personal situation, or a less sensitive version. Share only what you are comfortable bringing into class.</span>
-        <textarea name="story" id="f_story" rows="12" placeholder="e.g. Last week, something happened that I wanted to understand or improve... From my perspective... I noticed... I found myself thinking... I did... I still wonder..."></textarea>
+      <label class="required-field">
+        <span class="required-line">Your moment <strong class="required-pill">Required</strong></span>
+        <small class="field-help">Bring a work, community, or personal situation, or a less sensitive version. Share only what you are comfortable bringing into class.</small>
+        <textarea name="story" id="f_story" rows="12" placeholder="e.g. Last week, something happened that I wanted to understand or improve... From my perspective... I noticed... I found myself thinking... I did... I still wonder..." required></textarea>
       </label>
     </div>
 
@@ -576,6 +580,18 @@
           <h3>Choose a look for your moment poster.</h3>
           <p>Pick a visual style and colour mood. Your name and story will be turned into a prompt you can copy into a poster or image-generation tool of your choice.</p>
         </div>
+
+        <label class="poster-field required-field">
+          <span class="required-line">Your gender <strong class="required-pill">Required</strong></span>
+          <select id="f_gender" name="gender" required>
+            <option value="">Choose one</option>
+            <option value="female">Female</option>
+            <option value="male">Male</option>
+            <option value="non-binary">Non-binary</option>
+            <option value="prefer-not-to-say">Prefer not to say</option>
+          </select>
+          <small>This helps the poster represent you correctly.</small>
+        </label>
 
         <fieldset class="poster-options">
           <legend>Poster style</legend>
@@ -671,7 +687,7 @@
 <!-- ============ Libraries ============ -->
 <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
-<script src="app.js?v=20260708-video-fix"></script>
+<script src="app.js?v=20260710-required-fields"></script>
 <script data-pplx-inline-edit>
 (function () {
   if (window === window.top) return;
